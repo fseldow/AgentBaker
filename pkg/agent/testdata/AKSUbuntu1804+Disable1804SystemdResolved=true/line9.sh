@@ -105,6 +105,13 @@ ERR_CREDENTIAL_PROVIDER_DOWNLOAD_TIMEOUT=205
 
 ERR_CNI_VERSION_INVALID=206 
 
+ERR_ORAS_PULL_K8S_FAIL=207 
+ERR_ORAS_PULL_FAIL_RESERVE_1=208 
+ERR_ORAS_PULL_FAIL_RESERVE_2=209 
+ERR_ORAS_PULL_FAIL_RESERVE_3=210 
+ERR_ORAS_PULL_FAIL_RESERVE_4=211 
+ERR_ORAS_PULL_FAIL_RESERVE_5=212 
+
 if find /etc -type f -name "*-release" -print -quit 2>/dev/null | grep -q '.'; then
     OS=$(sort -r /etc/*-release | gawk 'match($0, /^(ID_LIKE=(coreos)|ID=(.*))$/, a) { print toupper(a[2] a[3]); exit }')
     OS_VERSION=$(sort -r /etc/*-release | gawk 'match($0, /^(VERSION_ID=(.*))$/, a) { print toupper(a[2] a[3]); exit }' | tr -d '"')
@@ -193,6 +200,23 @@ retrycmd_get_tarball() {
             return 1
         else
             timeout 60 curl -fsSLv $url -o $tarball > $CURL_OUTPUT 2>&1
+            if [[ $? != 0 ]]; then
+                cat $CURL_OUTPUT
+            fi
+            sleep $wait_sleep
+        fi
+    done
+}
+retrycmd_get_tarball_from_registry() {
+    tar_retries=$1; wait_sleep=$2; tarball=$3; url=$4
+    tar_folder=$(direname "$tarball")
+    echo "${tar_retries} retries"
+    for i in $(seq 1 $tar_retries); do
+        tar -tzf $tarball && break || \
+        if [ $i -eq $tar_retries ]; then
+            return 1
+        else
+            timeout 60 oras pull $url -o $tar_folder > $CURL_OUTPUT 2>&1
             if [[ $? != 0 ]]; then
                 cat $CURL_OUTPUT
             fi

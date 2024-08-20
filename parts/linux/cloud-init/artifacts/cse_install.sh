@@ -483,7 +483,7 @@ installKubeletKubectlAndKubeProxy() {
         else
             url="${BOOTSTRAP_PROFILE_CONTAINER_REGISTRY_SERVER}/${K8S_REGISTRY_REPO}:v${KUBERNETES_VERSION}-linux-amd64"
         fi
-        logs_to_events "AKS.CSE.installKubeletKubectlAndKubeProxy.extractKubeBinaries" extractKubeBinaries ${KUBERNETES_VERSION} ${PRIVATE_KUBE_BINARY_DOWNLOAD_URL} true
+        logs_to_events "AKS.CSE.installKubeletKubectlAndKubeProxy.extractKubeBinaries" extractKubeBinaries ${KUBERNETES_VERSION} $url true
         # no egress traffic, default install will fail
         install_default_if_missing=false
     fi
