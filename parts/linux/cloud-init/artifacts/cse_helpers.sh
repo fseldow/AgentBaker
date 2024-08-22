@@ -222,7 +222,7 @@ retrycmd_get_tarball() {
 }
 retrycmd_get_tarball_from_registry() {
     tar_retries=$1; wait_sleep=$2; tarball=$3; url=$4
-    tar_folder=$(direname "$tarball")
+    tar_folder=$(dirname "$tarball")
     echo "${tar_retries} retries"
     for i in $(seq 1 $tar_retries); do
         tar -tzf $tarball && break || \
