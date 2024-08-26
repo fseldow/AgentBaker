@@ -231,6 +231,7 @@ retrycmd_get_tarball_from_registry() {
             return 1
         else
             # TODO: support private acr via kubelet identity
+            HOME=${HOME:-'/'} # if HOME is not set, oras will fail with error 'failed to get user home directory: $HOME is not defined'
             timeout 60 oras pull $url -o $tar_folder > $ORAS_OUTPUT 2>&1
             if [[ $? != 0 ]]; then
                 cat $ORAS_OUTPUT
