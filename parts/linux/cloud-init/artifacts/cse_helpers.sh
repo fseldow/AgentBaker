@@ -150,6 +150,7 @@ APT_CACHE_DIR=/var/cache/apt/archives/
 PERMANENT_CACHE_DIR=/root/aptcache/
 EVENTS_LOGGING_DIR=/var/log/azure/Microsoft.Azure.Extensions.CustomScript/events/
 CURL_OUTPUT=/tmp/curl_verbose.out
+ORAS_OUTPUT=/tmp/oras_verbose.out
 
 retrycmd_if_failure() {
     retries=$1; wait_sleep=$2; timeout=$3; shift && shift && shift
@@ -230,9 +231,9 @@ retrycmd_get_tarball_from_registry() {
             return 1
         else
             # TODO: support private acr via kubelet identity
-            timeout 60 oras pull $url -o $tar_folder > $CURL_OUTPUT 2>&1
+            timeout 60 oras pull $url -o $tar_folder > $ORAS_OUTPUT 2>&1
             if [[ $? != 0 ]]; then
-                cat $CURL_OUTPUT
+                cat $ORAS_OUTPUT
             fi
             sleep $wait_sleep
         fi
