@@ -151,6 +151,7 @@ PERMANENT_CACHE_DIR=/root/aptcache/
 EVENTS_LOGGING_DIR=/var/log/azure/Microsoft.Azure.Extensions.CustomScript/events/
 CURL_OUTPUT=/tmp/curl_verbose.out
 ORAS_OUTPUT=/tmp/oras_verbose.out
+ORAS_REGISTRY_CONFIG_FILE=/etc/oras/config.yaml # oras registry auth config file, not used, but have to define to avoid error "Error: failed to get user home directory: $HOME is not defined" 
 
 retrycmd_if_failure() {
     retries=$1; wait_sleep=$2; timeout=$3; shift && shift && shift
@@ -231,8 +232,7 @@ retrycmd_get_tarball_from_registry() {
             return 1
         else
             # TODO: support private acr via kubelet identity
-            HOME=${HOME:-'/'} # if HOME is not set, oras will fail with error 'failed to get user home directory: $HOME is not defined'
-            timeout 60 oras pull $url -o $tar_folder > $ORAS_OUTPUT 2>&1
+            timeout 60 oras pull $url -o $tar_folder --registry-config ${ORAS_REGISTRY_CONFIG_FILE} > $ORAS_OUTPUT 2>&1
             if [[ $? != 0 ]]; then
                 cat $ORAS_OUTPUT
             fi
