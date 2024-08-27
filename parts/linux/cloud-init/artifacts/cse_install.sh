@@ -12,6 +12,7 @@ CONTAINERD_DOWNLOADS_DIR="/opt/containerd/downloads"
 RUNC_DOWNLOADS_DIR="/opt/runc/downloads"
 K8S_DOWNLOADS_DIR="/opt/kubernetes/downloads"
 K8S_PRIVATE_PACKAGES_CACHE_DIR="/opt/kubernetes/downloads/private-packages"
+K8S_REGISTRY_REPO="oss/binaries/kubernetes/kubernetes-node"
 UBUNTU_RELEASE=$(lsb_release -r -s)
 SECURE_TLS_BOOTSTRAP_KUBELET_EXEC_PLUGIN_DOWNLOAD_DIR="/opt/azure/tlsbootstrap"
 SECURE_TLS_BOOTSTRAP_KUBELET_EXEC_PLUGIN_VERSION="v0.1.0-alpha.2"
@@ -420,9 +421,25 @@ extractKubeBinaries() {
         k8s_tgz_tmp="${k8s_downloads_dir}/${k8s_tgz_tmp_filename}"
         mkdir -p ${k8s_downloads_dir}
 
-        retrycmd_get_tarball 120 5 "${k8s_tgz_tmp}" ${kube_binary_url} || exit $ERR_K8S_DOWNLOAD_TIMEOUT
-        if [[ ! -f ${k8s_tgz_tmp} ]]; then
-            exit "$ERR_K8S_DOWNLOAD_TIMEOUT"
+        registry_regex='^.+\/.+\/.+:.+$'
+        if [[ ${kube_binary_url} =~ $registry_regex ]]; then
+            echo "detect kube_binary_url, ${kube_binary_url}, as registry url, will use oras to pull artifact binary"
+            # download the kube package from registry as oras artifact
+            if [[ $(isARM64) == 1 ]]; then
+                k8s_tgz_tmp="${k8s_downloads_dir}/kubernetes-node-linux-arm64.tar.gz"
+            else
+                k8s_tgz_tmp="${k8s_downloads_dir}/kubernetes-node-linux-amd64.tar.gz"
+            fi
+            retrycmd_get_tarball_from_registry 120 5 "${k8s_tgz_tmp}" ${kube_binary_url} || exit $ERR_ORAS_PULL_K8S_FAIL
+            if [[ ! -f ${k8s_tgz_tmp} ]]; then
+                exit "$ERR_ORAS_PULL_K8S_FAIL"
+            fi
+        else
+            # download the kube package from the default URL
+            retrycmd_get_tarball 120 5 "${k8s_tgz_tmp}" ${kube_binary_url} || exit $ERR_K8S_DOWNLOAD_TIMEOUT
+            if [[ ! -f ${k8s_tgz_tmp} ]]; then
+                exit "$ERR_K8S_DOWNLOAD_TIMEOUT"
+            fi
         fi
     fi
 
@@ -462,8 +479,21 @@ installKubeletKubectlAndKubeProxy() {
     # if the custom url is not specified and the required kubectl/kubelet-version via private url is not installed, install using the default url/package
     if [[ ! -f "/usr/local/bin/kubectl-${KUBERNETES_VERSION}" ]] || [[ ! -f "/usr/local/bin/kubelet-${KUBERNETES_VERSION}" ]]; then
         if [[ "$install_default_if_missing" == true ]]; then
+            if [[ ! -z ${BOOTSTRAP_PROFILE_CONTAINER_REGISTRY_SERVER} ]]; then
+                # network isolated cluster
+                echo "Detect Bootstrap profile artifact is Cache, will use oras to pull artifact binary"
+                if [[ $(isARM64) == 1 ]]; then
+                    registry_url="${BOOTSTRAP_PROFILE_CONTAINER_REGISTRY_SERVER}/${K8S_REGISTRY_REPO}:v${KUBERNETES_VERSION}-linux-arm64"
+                else
+                    registry_url="${BOOTSTRAP_PROFILE_CONTAINER_REGISTRY_SERVER}/${K8S_REGISTRY_REPO}:v${KUBERNETES_VERSION}-linux-amd64"
+                fi
+                K8S_DOWNLOADS_TEMP_DIR_FROM_REGISTRY="/tmp/kubernetes/downloads" # /opt folder will return permission error
+                logs_to_events "AKS.CSE.installKubeletKubectlAndKubeProxy.extractKubeBinaries" extractKubeBinaries ${KUBERNETES_VERSION} $registry_url false ${K8S_DOWNLOADS_TEMP_DIR_FROM_REGISTRY}
+                # no egress traffic, default install will fail
+                # will exit if the download fails
+
             #TODO: remove the condition check on KUBE_BINARY_URL once RP change is released
-            if (($(echo ${KUBERNETES_VERSION} | cut -d"." -f2) >= 17)) && [ -n "${KUBE_BINARY_URL}" ]; then
+            elif (($(echo ${KUBERNETES_VERSION} | cut -d"." -f2) >= 17)) && [ -n "${KUBE_BINARY_URL}" ]; then
                 logs_to_events "AKS.CSE.installKubeletKubectlAndKubeProxy.extractKubeBinaries" extractKubeBinaries ${KUBERNETES_VERSION} ${KUBE_BINARY_URL} false
             fi
         fi
