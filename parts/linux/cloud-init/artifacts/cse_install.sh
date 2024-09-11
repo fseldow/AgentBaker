@@ -168,6 +168,7 @@ downloadCredentialProvider() {
 }
 
 installCredentialProvider() {
+    rm -rf $CREDENTIAL_PROVIDER_DOWNLOAD_DIR
     logs_to_events "AKS.CSE.installCredentialProvider.downloadCredentialProvider" downloadCredentialProvider
     tar -xzf "$CREDENTIAL_PROVIDER_DOWNLOAD_DIR/${CREDENTIAL_PROVIDER_TGZ_TMP}" -C $CREDENTIAL_PROVIDER_DOWNLOAD_DIR
     mkdir -p "${CREDENTIAL_PROVIDER_BIN_DIR}"
@@ -203,6 +204,8 @@ downloadContainerdWasmShims() {
             local containerd_wasm_filepath="/usr/local/bin"
             local registry_url="${BOOTSTRAP_PROFILE_CONTAINER_REGISTRY_SERVER}/oss/binaries/deislabs/containerd-wasm-shims:${shim_version}-linux-${CPU_ARCH}"
             local wasm_shims_tgz_tmp=$containerd_wasm_filepath/containerd-wasm-shims-linux-${CPU_ARCH}.tar.gz
+            rm -f "$containerd_wasm_filepath/containerd-shim-spin-${binary_version}-v1"
+            rm -f "$containerd_wasm_filepath/containerd-shim-slight-${binary_version}-v1"
             if [ ! -f "$containerd_wasm_filepath/containerd-shim-spin-${binary_version}-v1" ] || [ ! -f "$containerd_wasm_filepath/containerd-shim-slight-${binary_version}-v1" ]; then
                 retrycmd_get_tarball_from_registry_with_oras 120 5 "${wasm_shims_tgz_tmp}" ${registry_url} || exit $ERR_ORAS_PULL_CONTAINERD_WASM
 
