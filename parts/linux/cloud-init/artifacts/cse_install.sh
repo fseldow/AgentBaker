@@ -625,7 +625,7 @@ installKubeletKubectlAndKubeProxy() {
                         echo "Extracted version: $binary_version from KUBE_BINARY_URL: ${KUBE_BINARY_URL}"
                     fi
                 fi
-                registry_url="${BOOTSTRAP_PROFILE_CONTAINER_REGISTRY_SERVER}/${K8S_REGISTRY_REPO}/kubernetes-node:v${binary_version}-linux-${CPU_ARCH}"
+                registry_url="${BOOTSTRAP_PROFILE_CONTAINER_REGISTRY_SERVER}/${K8S_REGISTRY_REPO}/kubernetes-node:${binary_version}-linux-${CPU_ARCH}"
 
                 # if rp already passes registry url, then directly use the registry url that rp passes
                 # this path should have not catch for now, but keep it for future 
