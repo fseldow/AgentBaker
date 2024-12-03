@@ -613,7 +613,7 @@ installKubeletKubectlAndKubeProxy() {
             if [[ ! -z ${BOOTSTRAP_PROFILE_CONTAINER_REGISTRY_SERVER} ]]; then
                 # network isolated cluster
                 echo "Detect Bootstrap profile artifact is Cache, will use oras to pull artifact binary"
-                binary_version=${KUBERNETES_VERSION} # by default use Kubernetes versions
+                binary_version="v${KUBERNETES_VERSION}" # by default use Kubernetes versions
                 # however, the kubelet and kubectl binary version may different with kubernetes version due to hotfix or beta
                 # so that we still need to extract the binary version from kube_binary_url
                 url_regax='https://acs-mirror.azureedge.net/kubernetes/v[0-9]+\.[0-9]+\..+/binaries/.+'
